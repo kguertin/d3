@@ -82,10 +82,8 @@ const update = (data) => {
   // update elements in the DOM
   rects
     .attr("width", x.bandwidth)
-    .attr("height", (d) => GRAPH_HEIGHT - y(d.orders))
     .attr("fill", "orange")
-    .attr("x", (d) => x(d.name))
-    .attr("y", (d) => y(d.orders));
+    .attr("x", (d) => x(d.name));
 
   // create elemetns from enter nodes
   rects
@@ -96,6 +94,7 @@ const update = (data) => {
     .attr("y", GRAPH_HEIGHT)
     .attr("fill", "orange")
     .attr("x", (d) => x(d.name))
+    .merge(rects)
     .transition()
     .duration(500)
     .attr("y", (d) => y(d.orders))
