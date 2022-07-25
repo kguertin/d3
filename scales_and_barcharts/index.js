@@ -10,7 +10,7 @@ import {
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  // add condig
+  // add config
 };
 
 // Initialize Firebase
@@ -43,11 +43,22 @@ const xAxisGroup = graph
   .append("g")
   .attr("transform", `translate(0, ${GRAPH_HEIGHT})`);
 
+// update x-axis text
+xAxisGroup
+  .selectAll("text")
+  .attr("transform", "rotate(-40)")
+  .attr("text-anchor", "end")
+  .attr("fill", "orange");
+
 const yAxisGroup = graph.append("g");
 
 //scales
 const y = d3.scaleLinear().range([GRAPH_HEIGHT, 0]);
-const x = d3.scaleBand().range([0, 500]).paddingInner(0.2).paddingOuter(0.2);
+const x = d3
+  .scaleBand()
+  .range([0, GRAPH_WIDTH])
+  .paddingInner(0.2)
+  .paddingOuter(0.2);
 
 // Create the axes
 const xAxis = d3.axisBottom(x);
@@ -56,20 +67,13 @@ const yAxis = d3
   .ticks(3)
   .tickFormat((d) => d + " orders");
 
-// update x-axis text
-xAxisGroup
-  .selectAll("text")
-  .attr("transform", "rotate(-40)")
-  .attr("text-anchor", "end")
-  .attr("fill", "orange");
-
 const update = (data) => {
+  // bind data to elements
+  const rects = graph.selectAll("rect").data(data);
+
   // Update scale domains
   y.domain([0, d3.max(data, (d) => d.orders)]);
   x.domain(data.map((i) => i.name));
-
-  // bind data to elements
-  const rects = graph.selectAll("rect").data(data);
 
   // remove unused elements
   rects.exit().remove();
@@ -77,7 +81,7 @@ const update = (data) => {
   // update elements in the DOM
   rects
     .attr("width", x.bandwidth)
-    .attr("height", (d) => y(d.orders))
+    .attr("height", (d) => GRAPH_HEIGHT - y(d.orders))
     .attr("fill", "orange")
     .attr("x", (d) => x(d.name))
     .attr("y", (d) => y(d.orders));
@@ -102,4 +106,8 @@ const q = query(collection(db, "dishes"));
 getDocs(q).then(({ docs }) => {
   const data = docs.map((doc) => doc.data());
   update(data);
+  d3.interval(() => {
+    data[0].orders += 50;
+    update(data);
+  }, 1000);
 });
