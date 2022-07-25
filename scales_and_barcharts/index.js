@@ -5,6 +5,7 @@ import {
   collection,
   getDocs,
   query,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/9.9.0/firebase-firestore.js";
 
 // Your web app's Firebase configuration
@@ -91,10 +92,14 @@ const update = (data) => {
     .enter()
     .append("rect")
     .attr("width", x.bandwidth)
-    .attr("height", (d) => GRAPH_HEIGHT - y(d.orders))
+    .attr("height", 0)
+    .attr("y", GRAPH_HEIGHT)
     .attr("fill", "orange")
     .attr("x", (d) => x(d.name))
-    .attr("y", (d) => y(d.orders));
+    .transition()
+    .duration(500)
+    .attr("y", (d) => y(d.orders))
+    .attr("height", (d) => GRAPH_HEIGHT - y(d.orders));
 
   // Call axes
   xAxisGroup.call(xAxis);
@@ -103,11 +108,33 @@ const update = (data) => {
 
 const q = query(collection(db, "dishes"));
 
-getDocs(q).then(({ docs }) => {
-  const data = docs.map((doc) => doc.data());
+let data = [];
+
+onSnapshot(q, (res) => {
+  res.docChanges().forEach((change) => {
+    const doc = { ...change.doc.data(), id: change.doc.id };
+    switch (change.type) {
+      case "added":
+        data.push(doc);
+        break;
+      case "modified":
+        const index = data.findIndex((i) => i.id === doc.id);
+        data[index] = doc;
+        break;
+      case "removed":
+        data = data.filter((i) => i.id !== doc.id);
+        break;
+      default:
+        break;
+    }
+  });
   update(data);
-  d3.interval(() => {
-    data[0].orders += 50;
-    update(data);
-  }, 1000);
 });
+
+// Starting conditions:
+// y = GRAPH_HEIGHT
+// Height = 0
+
+//End conditions:
+// y = y(d.orders)
+// height = graphHeight - y(d.orders)
